@@ -75,3 +75,9 @@ export const login = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Server error.' })
     }
 }
+
+export const logout = async (req: Request, res: Response) => {
+    // In a stateless JWT architecture, the token cannot be easily invalidated on the server.
+    // The client is responsible for discarding the token on its end.
+    res.json({ message: 'Logged out successfully. Please remove the token from your client.' })
+}

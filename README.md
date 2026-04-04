@@ -1,85 +1,93 @@
-# Todo Lists - Backend System.
+# Todo List System
 
-ขอบเขตการทำงานของระบบ TODO LIST
-1. Register & Login (Authentication by JWT).
-2. Users can CRUD their own to-do lists.
-3. Lists must have name, detail, due date, status
-4. Can filter, sort and search by method get.
+ระบบจัดการรายการสิ่งที่ต้องทำ (Todo List) ที่พัฒนาขึ้นโดยใช้ Node.js, Express และ TypeScript พร้อมกับ Prisma ORM สำหรับการจัดการฐานข้อมูล (SQLite) มีระบบ Authentication สำหรับผู้ใช้งาน
 
-# Register.
-# ----------------------------------------------------------------
-POST http://localhost:4000/api/v1/auth/register
-# ----------------------------------------------------------------
-{
-  "email": "test01@example.com",
-  "password": "123456",
-  "confirm_password": "123456",
-  "firstname": "AAA",
-  "lastname": "Triple A"
-}
+## เทคโนโลยีที่ใช้งาน (Technologies Used)
+- **Runtime:** Node.js
+- **Framework:** Express.js
+- **Language:** TypeScript
+- **ORM:** Prisma
+- **Database:** SQLite (ตามค่าเริ่มต้น)
+- **Authentication:** JSON Web Tokens (JWT) & bcrypt สำหรับการเข้ารหัสรหัสผ่าน
+- **API Documentation:** Swagger UI (`swagger-ui-express` & `swagger-jsdoc`)
 
-# Login.
-# ----------------------------------------------------------------
-POST http://localhost:4000/api/v1/auth/login
-# ----------------------------------------------------------------
-{
-  "email": "test01@example.com",
-  "password": "123456"
-}
+## โครงสร้างโปรเจกต์ (Project Structure)
+```
+Todo-List-System/
+├── prisma/             # ไฟล์ตั้งค่า Schema ของ Prisma ORM และฐานข้อมูล SQLite
+├── src/                # ซอร์สโค้ดหลักของแอปพลิเคชัน
+│   ├── controllers/    # ฟังก์ชันควบคุมการทำงานและการประมวลผลข้อมูลของแต่ละ Route
+│   ├── middleware/     # มิดเดิลแวร์ เช่น การตรวจสอบสิทธิ์การเข้าถึง (Authentication)
+│   ├── routes/         # กำหนดเส้นทาง API (auth.ts และ todos.ts)
+│   ├── app.ts          # การตั้งค่าแอปพลิเคชัน Express
+│   ├── prismaClient.ts # การเชื่อมต่อฐานข้อมูล Prisma Client
+│   └── server.ts       # จุดเริ่มต้นการทำงานของแอปพลิเคชัน (Entry Point)
+├── .env.example        # ไฟล์ตัวอย่างสำหรับตั้งค่า Environment Variables
+├── package.json        # ข้อมูลโปรเจกต์และรายการ Dependencies
+└── tsconfig.json       # การตั้งค่า TypeScript
+```
 
-# Create todo list.
-# ----------------------------------------------------------------
-POST http://localhost:4000/api/v1/todos
-# ----------------------------------------------------------------
-{
-  "title": "AAA Work 01",
-  "description": "Description for work 01",
-  "dueDate": "2025-11-15T18:00:00.000Z",
-  "status": "TODO"
-}
+## สิ่งที่ต้องติดตั้งก่อน (Prerequisites)
+- [Node.js](https://nodejs.org/) (แนะนำเวอร์ชัน 18 ขึ้นไป)
+- npm หรือ yarn หรือ pnpm สำหรับจัดการแพ็กเกจ
 
-# Get all todo lists.
-# ----------------------------------------------------------------
-GET http://localhost:4000/api/v1/todos
-# ----------------------------------------------------------------
+## การติดตั้ง (Installation)
 
-# Get single todo list.
-# ----------------------------------------------------------------
-GET http://localhost:4000/api/v1/todos/1
-# ----------------------------------------------------------------
+1. **โคลนโปรเจกต์ (Clone the repository)**
+   ```sh
+   git clone <repository_url>
+   cd Todo-List-System
+   ```
 
-# Edit/Update single todo list.
-# ----------------------------------------------------------------
-PUT http://localhost:4000/api/v1/todos/1
-# ----------------------------------------------------------------
-{
-  "title": "Work A",
-  "description": "Description for work A",
-  "status": "TODO"
-}
+2. **ติดตั้ง Dependencies**
+   ```sh
+   npm install
+   ```
 
-# Delete single todo list. (Soft Delete)
-# ----------------------------------------------------------------
-DELETE http://localhost:4000/api/v1/todos/1
-# ----------------------------------------------------------------
+3. **ตั้งค่า Environment Variables**
+   คัดลอกไฟล์ `.env.example` เป็น `.env` และกำหนดค่าที่จำเป็น
+   ```sh
+   cp .env.example .env
+   ```
+   **ตัวอย่าง `.env`**:
+   ```env
+   DATABASE_URL="file:./dev.db"
+   JWT_SECRET="your_super_secret_jwt_key"
+   SALT_ROUNDS="10"
+   PORT="3000"
+   ```
 
-# Restore single todo list.
-# ----------------------------------------------------------------
-POST http://localhost:4000/api/v1/todos/1/restore
-# ----------------------------------------------------------------
+4. **สร้างและอัปเดตฐานข้อมูลด้วย Prisma**
+   ```sh
+   npx prisma db push
+   ```
 
-# Searching todo list.
-# ----------------------------------------------------------------
-GET http://localhost:4000/api/v1/todos?search=...
-# ----------------------------------------------------------------
+## การรันเซิร์ฟเวอร์ (Running the Application)
 
-# Sorting todo list. // 'createdAt', 'updatedAt', 'dueDate', 'title', 'status'
-# ----------------------------------------------------------------
-GET http://localhost:4000/api/v1/todos?sortBy=status&order=desc
-# ----------------------------------------------------------------
+**โหมด Development (มี Hot-Reload)**
+```sh
+npm run start
+```
 
-# Filter by status or due date.
-# ----------------------------------------------------------------
-GET http://localhost:4000/api/v1/todos?status=COMPLETED
-GET http://localhost:4000/api/v1/todos?from=2025-10-01&to=2025-12-01
-# ----------------------------------------------------------------
+แอปพลิเคชันจะรันที่: `http://localhost:3000` (หรือพอร์ตที่กำหนดใน `.env`)
+
+## คู่มือการใช้งาน API (Swagger Documentation)
+
+ระบบมีเอกสาร API ที่พัฒนาด้วย Swagger เพื่อให้ง่ายต่อการทดสอบและเรียกใช้งาน
+เมื่อรันเซิร์ฟเวอร์เรียบร้อยแล้ว สามารถเข้าดูรายละเอียด Endpoints ทั้งหมดได้ที่เบราว์เซอร์:
+👉 **URL:** `http://localhost:3000/api-docs`
+
+> **หมายเหตุ:** สำหรับ API ของ Todos คุณต้องคลิกปุ่ม **Authorize** ในหน้า Swagger และกรอก Token ในรูปแบบ `Bearer <token>` (นำ Token มาจาก Endpoint `/login`)
+
+## API Endpoints หลัก
+- **Authentication Routes (`/api/v1/auth`)**
+  - POST `/register` - ลงทะเบียนผู้ใช้งานใหม่
+  - POST `/login` - เข้าสู่ระบบเพื่อรับ JWT token
+
+- **Todo Routes (`/api/v1/todos`)** - *ต้องใช้ Authorization header (Bearer token)*
+  - GET `/` - ดึงรายการ Todo ทั้งหมดของผู้ใช้
+  - POST `/` - สร้าง Todo ใหม่
+  - GET `/:id` - ดึงข้อมูล Todo ตาม ID
+  - PUT `/:id` - แก้ไข Todo
+  - DELETE `/:id` - ลบ Todo
+  - POST `/:id/restore` - กู้คืน Todo ที่ถูกลบไปแล้ว
