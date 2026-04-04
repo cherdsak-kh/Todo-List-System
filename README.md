@@ -77,12 +77,14 @@ npm run start
 เมื่อรันเซิร์ฟเวอร์เรียบร้อยแล้ว สามารถเข้าดูรายละเอียด Endpoints ทั้งหมดได้ที่เบราว์เซอร์:
 👉 **URL:** `http://localhost:3000/api-docs`
 
-> **หมายเหตุ:** สำหรับ API ของ Todos คุณต้องคลิกปุ่ม **Authorize** ในหน้า Swagger และกรอก Token ในรูปแบบ `Bearer <token>` (นำ Token มาจาก Endpoint `/login`)
+> **เคล็ดลับสุดพิเศษ (Auto-Authorization):**
+> คุณไม่จำเป็นต้องคัดลอก Token ไปใส่เองอีกต่อไป! เพียงแค่หน้าต่าง Swagger ของคุณเรียกใช้ Endpoint `/login` จนสำเร็จ (และได้ Response 200) ระบบจะทำการตั้งค่า Token (รูปกุญแจล็อค) ให้คุณโดยอัตโนมัติ และในทางกลับกัน เมื่อคุณกดเรียก Endpoint `/logout` ระบบก็จะช่วยเคลียร์ Token ให้ทันที
 
 ## API Endpoints หลัก
 - **Authentication Routes (`/api/v1/auth`)**
   - POST `/register` - ลงทะเบียนผู้ใช้งานใหม่
   - POST `/login` - เข้าสู่ระบบเพื่อรับ JWT token
+  - POST `/logout` - ออกจากระบบและลบ Token ฝั่ง Client
 
 - **Todo Routes (`/api/v1/todos`)** - *ต้องใช้ Authorization header (Bearer token)*
   - GET `/` - ดึงรายการ Todo ทั้งหมดของผู้ใช้
