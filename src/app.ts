@@ -1,13 +1,11 @@
+import 'dotenv/config'
 import express from 'express'
 import morgan from 'morgan'
 import cors from 'cors'
-import dotenv from 'dotenv'
 import swaggerUi from 'swagger-ui-express'
 import swaggerJsdoc from 'swagger-jsdoc'
 import authRoutes from './routes/auth'
 import todosRoutes from './routes/todos'
-
-dotenv.config()
 
 const app = express()
 app.use(cors())
