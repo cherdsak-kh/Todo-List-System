@@ -60,24 +60,17 @@ jobs:
           script_stop: true # สั่งให้หยุดรันสคริปต์ทันทีหากมีคำสั่งใดทำงานผิดพลาด
           script: |
             REM 1. Login เข้า ghcr.io ผ่านท่อ SSH บนเครื่องเซิร์ฟเวอร์ปลายทาง
-            echo ${{ secrets.DOCKER_REGISTRY_TOKEN }} | docker login ghcr.io -u ${{ secrets.DOCKER_REGISTRY_USER }} --password-stdin
+            echo ${{ secrets.DOCKER_REGISTRY_TOKEN }} | docker login ghcr.io -u ${{ secrets.DOCKER_REGISTRY_USER }} --password-stdin || exit 1
             
             REM 2. Pull Image เวอร์ชั่นล่าสุดลงมาจาก GitHub Packages
-            docker pull ${{ needs.build-and-push.outputs.image_tag }}
+            docker pull ${{ needs.build-and-push.outputs.image_tag }} || exit 1
             
             REM 3. ตรวจสอบคอนเทนเนอร์เดิมในเครื่อง (ถ้ามีให้หยุดการทำงานและลบทิ้งก่อนรันตัวใหม่)
-            docker stop ${{ needs.build-and-push.outputs.container_name }} || echo "Container not found or already stopped"
-            docker rm ${{ needs.build-and-push.outputs.container_name }} || echo "Container not found or already removed"
+            docker stop ${{ needs.build-and-push.outputs.container_name }}
+            docker rm ${{ needs.build-and-push.outputs.container_name }}
             
-            REM 4. สั่งรัน Container ตัวใหม่ 
-            REM (หมายเหตุ: สไตล์ CMD จะใช้เครื่องหมาย ^ ในการขึ้นบรรทัดใหม่)
-            docker run -d ^
-              --name ${{ needs.build-and-push.outputs.container_name }} ^
-              -p 80:3000 ^
-              -v "C:\app-data\todo-list-db:/app/prisma" ^
-              --env-file "C:\app-data\todo-list-db\.env" ^
-              --restart unless-stopped ^
-              ${{ needs.build-and-push.outputs.image_tag }}
+            REM 4. สั่งรัน Container ตัวใหม่ (เขียนเป็นบรรทัดเดียวเพื่อป้องกันปัญหาการเว้นบรรทัดใน CMD)
+            docker run -d --name ${{ needs.build-and-push.outputs.container_name }} -p 80:3000 -v "C:\app-data\todo-list-db:/app/prisma" --env-file "C:\app-data\todo-list-db\.env" --restart unless-stopped ${{ needs.build-and-push.outputs.image_tag }} || exit 1
               
             REM 5. สั่งล้าง Image เก่าๆ ที่ไม่ได้ใช้งาน (Dangling Images) เพื่อเซฟพื้นที่ดิสก์ของ Windows
             docker image prune -f
