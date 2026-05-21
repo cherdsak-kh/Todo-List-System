@@ -76,6 +76,8 @@ jobs:
             docker run -d `
               --name $containerName `
               -p 80:3000 `
+              -v "C:\app-data\todo-list-db:/app/prisma" `
+              --env-file "C:\app-data\todo-list-db\.env" `
               --restart unless-stopped `
               $imageTag
               
