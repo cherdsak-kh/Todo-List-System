@@ -31,7 +31,7 @@ jobs:
       - name: Downcase Repository Name
         id: string
         run: |
-          IMAGE_URL="ghcr.io/${{ secrets.DOCKER_REGISTRY_USER }}/${{ github.event.repository.name }}:latest"
+          IMAGE_URL="ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:latest"
           echo "image_tag=$(echo $IMAGE_URL | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
           REPO_NAME="${{ github.event.repository.name }}-container"
           echo "container_name=$(echo $REPO_NAME | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
@@ -63,27 +63,21 @@ jobs:
             if not exist "C:\app-data\todo-list-db" mkdir "C:\app-data\todo-list-db"
             
             REM 2. ตรวจสอบว่าไฟล์ .env มีอยู่จริงหรือไม่ ถ้าไม่มีให้พังทันที
-            if not exist "C:\app-data\todo-list-db\.env" (
-                echo ERROR: C:\app-data\todo-list-db\.env file is MISSING! Please create it on the server.
-                exit 1
-            )
+            if not exist "C:\app-data\todo-list-db\.env" ( echo ERROR: C:\app-data\todo-list-db\.env file is MISSING! Please create it on the server. && exit 1 )
             
             REM 3. Login เข้า ghcr.io
-            echo ${{ secrets.DOCKER_REGISTRY_TOKEN }} | docker login ghcr.io -u ${{ secrets.DOCKER_REGISTRY_USER }} --password-stdin
-            if %ERRORLEVEL% NEQ 0 exit 1
+            echo ${{ secrets.DOCKER_REGISTRY_TOKEN }} | docker login ghcr.io -u ${{ secrets.DOCKER_REGISTRY_USER }} --password-stdin || exit 1
             
             REM 4. Pull Image
-            docker pull ${{ needs.build-and-push.outputs.image_tag }}
-            if %ERRORLEVEL% NEQ 0 exit 1
+            docker pull ${{ needs.build-and-push.outputs.image_tag }} || exit 1
             
             REM 5. Stop and Remove (ไม่ต้องเช็ค Error เพราะถ้าไม่มี Container มันจะ Error อยู่แล้ว)
             docker stop ${{ needs.build-and-push.outputs.container_name }}
             docker rm ${{ needs.build-and-push.outputs.container_name }}
             
             REM 6. Run
-            docker run -d --name ${{ needs.build-and-push.outputs.container_name }} -p 80:3000 -v "C:\app-data\todo-list-db:/app/prisma" --env-file "C:\app-data\todo-list-db\.env" --restart unless-stopped ${{ needs.build-and-push.outputs.image_tag }}
-            if %ERRORLEVEL% NEQ 0 exit 1
-              
+            docker run -d --name ${{ needs.build-and-push.outputs.container_name }} -p 80:3000 -v "C:\app-data\todo-list-db:/app/prisma" --env-file "C:\app-data\todo-list-db\.env" --restart unless-stopped ${{ needs.build-and-push.outputs.image_tag }} || exit 1
+            
             REM 7. Prune
             docker image prune -f
             
