@@ -59,27 +59,4 @@ jobs:
           port: 22
           script_stop: true # สั่งให้หยุดรันสคริปต์ทันทีหากมีคำสั่งใดทำงานผิดพลาด
           script: |
-            REM 1. สร้างโฟลเดอร์หากยังไม่มี
-            if not exist "C:\app-data\todo-list-db" mkdir "C:\app-data\todo-list-db"
-            
-            REM 2. ตรวจสอบว่าไฟล์ .env มีอยู่จริงหรือไม่ ถ้าไม่มีให้พังทันที
-            if not exist "C:\app-data\todo-list-db\.env" ( echo ERROR: C:\app-data\todo-list-db\.env file is MISSING! Please create it on the server. && exit 1 )
-            
-            REM 3. Login เข้า ghcr.io
-            echo ${{ secrets.DOCKER_REGISTRY_TOKEN }} | docker login ghcr.io -u ${{ secrets.DOCKER_REGISTRY_USER }} --password-stdin || exit 1
-            
-            REM 4. Pull Image
-            docker pull ${{ needs.build-and-push.outputs.image_tag }} || exit 1
-            
-            REM 5. Stop and Remove (ไม่ต้องเช็ค Error เพราะถ้าไม่มี Container มันจะ Error อยู่แล้ว)
-            docker stop ${{ needs.build-and-push.outputs.container_name }}
-            docker rm ${{ needs.build-and-push.outputs.container_name }}
-            
-            REM 6. Run
-            docker run -d --name ${{ needs.build-and-push.outputs.container_name }} -p 80:3000 -v "C:\app-data\todo-list-db:/app/prisma" --env-file "C:\app-data\todo-list-db\.env" --restart unless-stopped ${{ needs.build-and-push.outputs.image_tag }} || exit 1
-            
-            REM 7. Prune
-            docker image prune -f
-            
-            REM 6. ตรวจสอบสถานะ Container ล่าสุด
-            docker ps -a >> "C:\app-data\todo-list-db\deploy-log.txt" 2>&1
+            powershell -NoProfile -NonInteractive -Command "$ErrorActionPreference = 'Stop'; $imageTag = 'ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:latest'.ToLower(); $containerName = '${{ github.event.repository.name }}-container'.ToLower(); if (-not (Test-Path 'C:\app-data\todo-list-db')) { New-Item -ItemType Directory -Force -Path 'C:\app-data\todo-list-db' | Out-Null }; if (-not (Test-Path 'C:\app-data\todo-list-db\.env')) { throw 'ERROR: C:\app-data\todo-list-db\.env file is MISSING! Please create it on the server.' }; '${{ secrets.DOCKER_REGISTRY_TOKEN }}' | docker login ghcr.io -u '${{ secrets.DOCKER_REGISTRY_USER }}' --password-stdin; docker pull $imageTag; docker stop $containerName 2>$null; docker rm $containerName 2>$null; docker run -d --name $containerName -p 80:3000 -v 'C:\app-data\todo-list-db:/app/prisma' --env-file 'C:\app-data\todo-list-db\.env' --restart unless-stopped $imageTag; docker image prune -f"
