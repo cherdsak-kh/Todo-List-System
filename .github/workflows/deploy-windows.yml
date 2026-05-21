@@ -8,6 +8,9 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.string.outputs.image_tag }}
+      container_name: ${{ steps.string.outputs.container_name }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -30,6 +33,8 @@ jobs:
         run: |
           IMAGE_URL="ghcr.io/${{ secrets.DOCKER_REGISTRY_USER }}/${{ github.event.repository.name }}:latest"
           echo "image_tag=$(echo $IMAGE_URL | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+          REPO_NAME="${{ github.event.repository.name }}-container"
+          echo "container_name=$(echo $REPO_NAME | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
@@ -54,32 +59,25 @@ jobs:
           port: 22
           script_stop: true # สั่งให้หยุดรันสคริปต์ทันทีหากมีคำสั่งใดทำงานผิดพลาด
           script: |
-            # ใช้ PowerShell บน Windows แปลงชื่อทุกอย่างเป็นตัวพิมพ์เล็กเพื่อความแม่นยำในการระบุ Container
-            $imageTag = "ghcr.io/${{ secrets.DOCKER_REGISTRY_USER }}/${{ github.event.repository.name }}:latest".ToLower()
-            $containerName = "${{ github.event.repository.name }}-container".ToLower()
+            REM 1. Login เข้า ghcr.io ผ่านท่อ SSH บนเครื่องเซิร์ฟเวอร์ปลายทาง
+            echo ${{ secrets.DOCKER_REGISTRY_TOKEN }} | docker login ghcr.io -u ${{ secrets.DOCKER_REGISTRY_USER }} --password-stdin
             
-            # 1. Login เข้า ghcr.io ผ่านท่อ SSH บนเครื่องเซิร์ฟเวอร์ปลายทาง
-            echo "${{ secrets.DOCKER_REGISTRY_TOKEN }}" | docker login ghcr.io -u "${{ secrets.DOCKER_REGISTRY_USER }}" --password-stdin
+            REM 2. Pull Image เวอร์ชั่นล่าสุดลงมาจาก GitHub Packages
+            docker pull ${{ needs.build-and-push.outputs.image_tag }}
             
-            # 2. Pull Image เวอร์ชั่นล่าสุดลงมาจาก GitHub Packages
-            docker pull $imageTag
+            REM 3. ตรวจสอบคอนเทนเนอร์เดิมในเครื่อง (ถ้ามีให้หยุดการทำงานและลบทิ้งก่อนรันตัวใหม่)
+            docker stop ${{ needs.build-and-push.outputs.container_name }} || echo "Container not found or already stopped"
+            docker rm ${{ needs.build-and-push.outputs.container_name }} || echo "Container not found or already removed"
             
-            # 3. ตรวจสอบคอนเทนเนอร์เดิมในเครื่อง (ถ้ามีให้หยุดการทำงานและลบทิ้งก่อนรันตัวใหม่)
-            if (docker ps -a --format "{{.Names}}" | Select-String -Pattern "^$containerName$") {
-                Write-Host "Stopping and removing existing container: $containerName..."
-                docker stop $containerName
-                docker rm $containerName
-            }
-            
-            # 4. สั่งรัน Container ตัวใหม่ 
-            # (หมายเหตุ: สไตล์ PowerShell จะใช้เครื่องหมาย Backtick ` ในการขึ้นบรรทัดใหม่ แทนเครื่องหมาย Backslash \)
-            docker run -d `
-              --name $containerName `
-              -p 80:3000 `
-              -v "C:\app-data\todo-list-db:/app/prisma" `
-              --env-file "C:\app-data\todo-list-db\.env" `
-              --restart unless-stopped `
-              $imageTag
+            REM 4. สั่งรัน Container ตัวใหม่ 
+            REM (หมายเหตุ: สไตล์ CMD จะใช้เครื่องหมาย ^ ในการขึ้นบรรทัดใหม่)
+            docker run -d ^
+              --name ${{ needs.build-and-push.outputs.container_name }} ^
+              -p 80:3000 ^
+              -v "C:\app-data\todo-list-db:/app/prisma" ^
+              --env-file "C:\app-data\todo-list-db\.env" ^
+              --restart unless-stopped ^
+              ${{ needs.build-and-push.outputs.image_tag }}
               
-            # 5. สั่งล้าง Image เก่าๆ ที่ไม่ได้ใช้งาน (Dangling Images) เพื่อเซฟพื้นที่ดิสก์ของ Windows
+            REM 5. สั่งล้าง Image เก่าๆ ที่ไม่ได้ใช้งาน (Dangling Images) เพื่อเซฟพื้นที่ดิสก์ของ Windows
             docker image prune -f
