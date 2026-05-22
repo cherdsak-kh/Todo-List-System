@@ -1,4 +1,5 @@
 import { Request, Response } from 'express'
+import { AuthRequest } from '../middleware/auth'
 import prisma from '../prismaClient'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
@@ -80,4 +81,34 @@ export const logout = async (req: Request, res: Response) => {
     // In a stateless JWT architecture, the token cannot be easily invalidated on the server.
     // The client is responsible for discarding the token on its end.
     res.json({ message: 'Logged out successfully. Please remove the token from your client.' })
+}
+
+export const getProfile = async (req: AuthRequest, res: Response) => {
+    try {
+        const userId = req.user?.id
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized.' })
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                email: true,
+                firstname: true,
+                lastname: true,
+                createdAt: true,
+                updatedAt: true
+            }
+        })
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found.' })
+        }
+
+        res.json({ user })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ message: 'Server error.' })
+    }
 }

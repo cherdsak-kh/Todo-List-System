@@ -1,5 +1,6 @@
 import { Router } from 'express'
-import { register, login, logout } from '../controllers/authController'
+import { register, login, logout, getProfile } from '../controllers/authController'
+import { authenticate } from '../middleware/auth'
 
 const router = Router()
 
@@ -95,5 +96,45 @@ router.post('/login', login)
  *         description: Logged out successfully
  */
 router.post('/logout', logout)
+
+/**
+ * @swagger
+ * /api/v1/auth/profile:
+ *   get:
+ *     summary: Get logged in user profile
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     email:
+ *                       type: string
+ *                     firstname:
+ *                       type: string
+ *                     lastname:
+ *                       type: string
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found
+ */
+router.get('/profile', authenticate, getProfile)
 
 export default router
